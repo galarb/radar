@@ -3,7 +3,10 @@
 #include "radar.h"
 TaskHandle_t Task1;
 TaskHandle_t Task2;
-radar myradar(1,2,3,4,5,6,7);
+
+//echoPin, trigPin, servoRadarPin, servoPin1, servoPin2, laserPin1, laserPin2, radarSpeed, cannonn distance in cm
+Radar myradar(1, 2, 3, 4, 5, 6, 7, 20, 20); 
+
 
 void setup() {
   myradar.begin(115200);
@@ -37,8 +40,6 @@ void loop_0 ( void * pvParameters ){
   for(;;){      //this is an infinite loop on Core 0
    myradar.scan();
 
-   
-
   }
 }
 void loop_1 ( void * pvParameters ){
@@ -46,12 +47,12 @@ void loop_1 ( void * pvParameters ){
   Serial.println(xPortGetCoreID());
   for(;;){      //this is an infinite loop on Core 1
    //Serial.println("Testing loop_1");
-   delay(1000);
-   if(myradar.getDis() < 100){
+   if(int targetdistance = myradar.getDistance() < 100){
     Serial.print("target intercepted at angle: ");
-    int targetangle = myradar.getAng();
+    int targetangle = myradar.getAngle();
     Serial.println(targetangle);
-    myradar.shoot(targetangle);
+    myradar.shoot(targetangle, targetdistance);
+    delay(1000); // how long the beams will be shootign on the target
 
    }
   }

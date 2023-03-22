@@ -1,15 +1,13 @@
-#include "stdint.h"
-#include "esp32-hal-ledc.h"
+#include <cmath>
 //cpp code for radar class
-#include "esp32-hal-gpio.h"
 #include "radar.h"
-#include "Arduino.h"
 #include <Wire.h>
 #include "LiquidCrystal_I2C.h"
 #include "HardwareSerial.h"
 #include <Adafruit_NeoPixel.h>
 #include <SPI.h>
 #include <ESP32Servo.h>
+
 unsigned long currentTime;
 unsigned long previousTime;
 double elapsedTime;
@@ -36,43 +34,46 @@ Servo radarServo; //Scan Radar
 Servo servo1;     //Right Cannon
 Servo servo2;     //Left Cannon
 
-radar::radar(int EchoPin, int TrigPin, int ServoPin1, int ServoRadarPin, int ServoPin2, int LaserPin1, int LaserPin2) {
-  echoPin = EchoPin;
-  trigPin = TrigPin;
-  servoRadarPin = ServoRadarPin;
-  servoPin1 = ServoPin1;
-  servoPin2 = ServoPin2;
-  laserPin1 = LaserPin1;
-  laserPin2 = LaserPin2;
-  
-  pinMode(trigPin, OUTPUT); 
-  pinMode(echoPin, INPUT); 
-  pinMode(laserPin1, OUTPUT);
-  pinMode(laserPin2, OUTPUT);
-  
-	// using default min/max of 1000us and 2000us
-	// different servos may require different min/max settings
-	// for an accurate 0 to 180 sweep
+Radar::Radar(int echoPin, int trigPin, int servoRadarPin, int servoPin1, int servoPin2, int laserPin1, int laserPin2, int radarSpeed, int cannonDistance){
+  _echoPin = echoPin;
+  _trigPin = trigPin;
+  _servoRadarPin = servoRadarPin;
+  _servoPin1 = servoPin1;
+  _servoPin2 = servoPin2;
+  _laserPin1 = laserPin1;
+  _laserPin2 = laserPin2;
+  _radarSpeed = radarSpeed;
+  _cannonDistance = cannonDistance;
+  pinMode(_trigPin, OUTPUT); 
+  pinMode(_echoPin, INPUT); 
+  pinMode(_laserPin1, OUTPUT);
+  pinMode(_laserPin2, OUTPUT);
 
+  radarServo.attach(_servoRadarPin);
+  servo1.attach(_servoPin1);
+  servo2.attach(_servoPin2);
+   
 }
 
-void radar::stripled (int lednum, int red, int green, int blue) {
+  
+  
+
+void Radar::setStripLEDColor (int lednum, int red, int green, int blue) {
       strip.setPixelColor(lednum, strip.Color(red, green, blue));
       strip.show();
-      strip.rainbow(0, 1, 255, 255, true);
+      //strip.rainbow(0, 1, 255, 255, true);
       delay(50);
 }
-void radar::neopixels (int red, int green, int blue) {
+void Radar::setNeoPixelsColor (int red, int green, int blue) {
   for (int i = 0; i < 29; i++) {
       strip.setPixelColor (i, strip.Color(red, green, blue));
-      strip.rainbow(0, 1, 255, 255, true);
-
+      // strip.rainbow(0, 1, 255, 255, true);
       strip.show();
-      delay(50);
+      delay(_radarSpeed);
   }
 }
 
-void radar::begin(double bdrate) {
+void Radar::begin(double bdrate) {
   Serial.begin(bdrate);
   lcd.init();  
   lcd.backlight();
@@ -80,36 +81,36 @@ void radar::begin(double bdrate) {
   lcd.print("Started - OK");
   
   Serial.print("Echo Pin = ");  
-  Serial.println(echoPin);
+  Serial.println(_echoPin);
   Serial.print("Trig Pin = ");  
-  Serial.println(trigPin);
+  Serial.println(_trigPin);
   Serial.print("Radar Servo Pin = ");  
-  Serial.println(servoRadarPin);
+  Serial.println(_servoRadarPin);
   Serial.print("Servo 1 Pin = ");  
-  Serial.println(servoPin1);
+  Serial.println(_servoPin1);
   Serial.print("Servo 2 Pin = ");  
-  Serial.println(servoPin2);
+  Serial.println(_servoPin2);
   Serial.print("Laser 1 Pin = ");  
-  Serial.println(laserPin1);
+  Serial.println(_laserPin1);
   Serial.print("Laser 2 Pin = ");  
-  Serial.println(laserPin2);
+  Serial.println(_laserPin2);
    
   strip.begin();
   strip.setBrightness(200); //(up to 255)
   strip.clear(); 
-  neopixels (255, 0, 0); 
+  setNeoPixelsColor (255, 0, 0); 
   previousTime = millis(); //otherwise the first Itegral value will be very high
   
   radarServo.setPeriodHertz(50);    // standard 50 hz servo
-	radarServo.attach(servoRadarPin, 1000, 2000); 
+	radarServo.attach(_servoRadarPin, 1000, 2000); 
   servo1.setPeriodHertz(50);    
-  servo1.attach(servoPin1, 1000, 2000); 
+  servo1.attach(_servoPin1, 1000, 2000); 
 	servo2.setPeriodHertz(50);
-  servo2.attach(servoPin2, 1000, 2000); 
+  servo2.attach(_servoPin2, 1000, 2000); 
 }
 
 
-double radar::PIDcalc(double inp, int sp){
+double Radar::calculatePID(double inp, int sp){
    currentTime = millis();                //get current time
    elapsedTime = (double)(currentTime - previousTime)/1000; //compute time elapsed from previous computation (60ms approx). divide in 1000 to get in Sec
    //Serial.print(currentTime); //for serial plotter
@@ -131,22 +132,22 @@ double radar::PIDcalc(double inp, int sp){
 
 
 
-uint8_t radar::getDis(){
-  digitalWrite(trigPin, LOW); //clears the US conditions
+uint8_t Radar::getDistance(){
+  digitalWrite(_trigPin, LOW); //clears the US conditions
   delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
+  digitalWrite(_trigPin, HIGH);
   delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-  duration = pulseIn(echoPin, HIGH); // Reads the echoPin, returns the sound wave travel time in microseconds
+  digitalWrite(_trigPin, LOW);
+  duration = pulseIn(_echoPin, HIGH); // Reads the echoPin, returns the sound wave travel time in microseconds
   // Calculating the distance
   distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
   return (distance);
 }
-int radar::getAng(){
-    return (radarangle);
+int Radar::getAngle(){
+    return (_radarAngle);
 }
 
-void radar::lcdershow(int s, int e, int g){ //setpoint, error, gyro
+void Radar::showErrorOnLCD(int s, int e, int g){ //setpoint, error, gyro
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("SP | PID | gyro");
@@ -162,7 +163,7 @@ void radar::lcdershow(int s, int e, int g){ //setpoint, error, gyro
   lcd.print(g); 
 }
 
-void radar::printg(char dirR, char dirL, int speedR, int speedL){
+void Radar::printInfo(char dirR, char dirL, int speedR, int speedL){
   Serial.println("-------------------------------------");
   Serial.println("               | Direction |  Speed");
     Serial.print("Right Motor    |    ");
@@ -175,27 +176,31 @@ void radar::printg(char dirR, char dirL, int speedR, int speedL){
   Serial.println(speedL);
 }
 
-void radar::scan(){
+void Radar::scan(){
  for (int i = 0; i < 180; i++) {
   radarServo.write(i);
-  radarangle = i;
+  delay(20);
+  _radarAngle = i;
  }  
 }
 
-void radar::shoot(int ang){
-  servo1.write(ang);
-  servo2.write(ang);
-  digitalWrite(laserPin1, HIGH);
-  digitalWrite(laserPin2, HIGH);
+void Radar::shoot(int targetangle, int targetdistance){
+  int angLaser1 = 180 - atan(targetdistance * sin(targetangle) / (_cannonDistance -  targetdistance *cos(targetangle)));
+  int angLaser2 =  atan(targetdistance * sin(targetangle) / (_cannonDistance + targetdistance * cos(targetangle))); 
+  servo1.write(angLaser1);
+  servo2.write(angLaser2);
+  digitalWrite(_laserPin1, HIGH);
+  digitalWrite(_laserPin2, HIGH);
 }
-void radar::pwmWrite(int pin1, int val1){
-  if (pin1 == servoRadarPin){
+
+void Radar::pwmWrite(int pin1, int val1){
+  if (pin1 == _servoRadarPin){
     ledcWrite(0, val1);
  }
- else if (pin1 == servoPin1) {
+ else if (pin1 == _servoPin1) {
   ledcWrite(1, val1);
  }
- else if (pin1 == servoPin2){
+ else if (pin1 == _servoPin2){
   ledcWrite(2, val1);
  }
 }
