@@ -5,11 +5,11 @@ TaskHandle_t Task1;
 TaskHandle_t Task2;
 
 //echoPin, trigPin, servoRadarPin, servoPin1, servoPin2, laserPin1, laserPin2, radarSpeed, cannonn distance in cm
-Radar myradar(1, 2, 3, 4, 5, 6, 7, 20, 20); 
-
+Radar myradar(5, 14, 33, 2, 4, 14, 12, 10, 20);
 
 void setup() {
   myradar.begin(115200);
+
   xTaskCreatePinnedToCore(
                     loop_0,   /* Task function. */
                     "Task1",     /* name of task. */
@@ -39,6 +39,7 @@ void loop_0 ( void * pvParameters ){
 
   for(;;){      //this is an infinite loop on Core 0
    myradar.scan();
+   //delay(30);
 
   }
 }
@@ -46,18 +47,15 @@ void loop_1 ( void * pvParameters ){
   Serial.print("loop_1 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){      //this is an infinite loop on Core 1
-   //Serial.println("Testing loop_1");
-   if(int targetdistance = myradar.getDistance() < 100){
-    Serial.print("target intercepted at angle: ");
-    int targetangle = myradar.getAngle();
-    Serial.println(targetangle);
-    myradar.shoot(targetangle, targetdistance);
-    delay(1000); // how long the beams will be shootign on the target
-
-   }
+    delay(1);
+    int targetdistance = myradar.getDistance();
+    if(targetdistance < 80){
+     int targetangle = myradar.getAngle();
+     myradar.shoot(targetangle, targetdistance);
+     delay(1); 
   }
+ }
 }
-
 void loop() {
 //Must be left EMPTY
 }

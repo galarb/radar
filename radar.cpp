@@ -1,5 +1,5 @@
-#include <cmath>
 //cpp code for radar class
+#include <cmath>
 #include "radar.h"
 #include <Wire.h>
 #include "LiquidCrystal_I2C.h"
@@ -25,6 +25,9 @@ int steps = 0;
 //const byte txPin = 13;
 long duration; // variable for the duration of sound wave travel
 int distance; // variable for the distance measurement
+int angLaser1;
+int angLaser2;
+
 String cmd="";
 
 
@@ -69,12 +72,14 @@ void Radar::setNeoPixelsColor (int red, int green, int blue) {
       strip.setPixelColor (i, strip.Color(red, green, blue));
       // strip.rainbow(0, 1, 255, 255, true);
       strip.show();
-      delay(_radarSpeed);
+      delay(20);
   }
 }
 
 void Radar::begin(double bdrate) {
   Serial.begin(bdrate);
+  Serial.println("started setup");
+
   lcd.init();  
   lcd.backlight();
   lcd.setCursor(3,0);
@@ -95,10 +100,10 @@ void Radar::begin(double bdrate) {
   Serial.print("Laser 2 Pin = ");  
   Serial.println(_laserPin2);
    
-  strip.begin();
+  /*strip.begin();
   strip.setBrightness(200); //(up to 255)
   strip.clear(); 
-  setNeoPixelsColor (255, 0, 0); 
+  setNeoPixelsColor (255, 0, 0); */
   previousTime = millis(); //otherwise the first Itegral value will be very high
   
   radarServo.setPeriodHertz(50);    // standard 50 hz servo
@@ -143,64 +148,82 @@ uint8_t Radar::getDistance(){
   distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
   return (distance);
 }
+
 int Radar::getAngle(){
     return (_radarAngle);
 }
 
-void Radar::showErrorOnLCD(int s, int e, int g){ //setpoint, error, gyro
+void Radar::ShowInfoLcd(int ang, int rightang, int leftang){ //setpoint, error, gyro
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("SP | PID | gyro");
-  lcd.setCursor(0,1);
-  lcd.print(s);  
-  lcd.setCursor(3,1);
-  lcd.print("|"); 
+  lcd.print("Radar| R | L ");
+  lcd.setCursor(1,1);
+  lcd.print(ang);  
   lcd.setCursor(5,1);
-  lcd.print(e); 
+  lcd.print("|"); 
+  lcd.setCursor(7,1);
+  lcd.print(rightang); 
   lcd.setCursor(9,1);
   lcd.print("|");  
   lcd.setCursor(11,1);
-  lcd.print(g); 
+  lcd.print(leftang); 
 }
 
-void Radar::printInfo(char dirR, char dirL, int speedR, int speedL){
-  Serial.println("-------------------------------------");
-  Serial.println("               | Direction |  Speed");
-    Serial.print("Right Motor    |    ");
-  Serial.print(dirR);
-  Serial.print("      |  ");
-  Serial.println(speedR);
-  Serial.print("Left Motor     |    ");
-  Serial.print(dirL);
-  Serial.print("      |  ");
-  Serial.println(speedL);
+void Radar::printInfo(int dist, int ang, int rightang, int leftang){
+  Serial.println("--------------------------------------------------------------------");
+  Serial.println("  Radar Angle |  Distance | Right Cannnon Angle | Left Cannont Angle");
+    Serial.print("    ");
+  Serial.print(ang);
+  Serial.print("       |    ");
+  Serial.print(dist);
+  Serial.print("       |    ");
+  Serial.print(rightang);
+  Serial.print("               |         ");
+  Serial.println(leftang); 
 }
 
 void Radar::scan(){
- for (int i = 0; i < 180; i++) {
+   
+ for (int i = 0; i < 179; i++) {
   radarServo.write(i);
-  delay(20);
+  delay(_radarSpeed);
   _radarAngle = i;
+ }  
+ for (int i = 178; i > 1 ; i--) {
+  radarServo.write(i);
+  delay(_radarSpeed);
+  _radarAngle = i; 
  }  
 }
 
 void Radar::shoot(int targetangle, int targetdistance){
-  int angLaser1 = 180 - atan(targetdistance * sin(targetangle) / (_cannonDistance -  targetdistance *cos(targetangle)));
-  int angLaser2 =  atan(targetdistance * sin(targetangle) / (_cannonDistance + targetdistance * cos(targetangle))); 
+  if(targetangle < 90){
+    angLaser1 = radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (targetdistance * cos(degtoradian(targetangle)) - _cannonDistance)));
+    angLaser2 =  radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (_cannonDistance + targetdistance * cos(degtoradian(targetangle))))); 
+  }
+  else{
+    angLaser1 = 180 - radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (_cannonDistance + targetdistance * cos(degtoradian(targetangle))))); 
+    angLaser2 = 180 - radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (targetdistance * cos(degtoradian(targetangle)) - _cannonDistance)));
+  }
+  
   servo1.write(angLaser1);
   servo2.write(angLaser2);
   digitalWrite(_laserPin1, HIGH);
   digitalWrite(_laserPin2, HIGH);
+  printInfo(targetdistance, targetangle, angLaser1, angLaser2);
+  ShowInfoLcd(targetangle, angLaser1, angLaser2);
+  delay(1000);// how long the beams will be shootign on the target
+  digitalWrite(_laserPin1, LOW);
+  digitalWrite(_laserPin2, LOW);
 }
 
-void Radar::pwmWrite(int pin1, int val1){
-  if (pin1 == _servoRadarPin){
-    ledcWrite(0, val1);
- }
- else if (pin1 == _servoPin1) {
-  ledcWrite(1, val1);
- }
- else if (pin1 == _servoPin2){
-  ledcWrite(2, val1);
- }
+
+double Radar::degtoradian(double degrees){ //degre in angles
+    double radians = degrees * M_PI / 180.0; // convert degrees to radians
+    return(radians);
+}
+double Radar::radiantodeg(double radians){ //degre in radians
+    double degrees = radians * 180.0 / M_PI;  
+    return(degrees);
+
 }
