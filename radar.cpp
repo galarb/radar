@@ -99,7 +99,10 @@ void Radar::begin(double bdrate) {
   Serial.println(_laserPin1);
   Serial.print("Laser 2 Pin = ");  
   Serial.println(_laserPin2);
-   
+  Serial.print("Scanning Speed = ");  
+  Serial.println(_radarSpeed);
+  Serial.print("Cannons Disctance from the radar = ");  
+  Serial.println(_cannonDistance);
   /*strip.begin();
   strip.setBrightness(200); //(up to 255)
   strip.clear(); 
@@ -145,8 +148,9 @@ uint8_t Radar::getDistance(){
   digitalWrite(_trigPin, LOW);
   duration = pulseIn(_echoPin, HIGH); // Reads the echoPin, returns the sound wave travel time in microseconds
   // Calculating the distance
-  distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
-  return (distance);
+  // Speed of sound wave divided by 2 (go and back)
+  int distance = duration * 0.034 / 2; 
+  return(distance);
 }
 
 int Radar::getAngle(){
@@ -197,13 +201,13 @@ void Radar::scan(){
 }
 
 void Radar::shoot(int targetangle, int targetdistance){
-  if(targetangle < 90){
+  if(targetangle < 90 ){
     angLaser1 = radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (targetdistance * cos(degtoradian(targetangle)) - _cannonDistance)));
     angLaser2 =  radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (_cannonDistance + targetdistance * cos(degtoradian(targetangle))))); 
   }
   else{
-    angLaser1 = 180 - radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (_cannonDistance + targetdistance * cos(degtoradian(targetangle))))); 
-    angLaser2 = 180 - radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (targetdistance * cos(degtoradian(targetangle)) - _cannonDistance)));
+    angLaser1 = abs(180 - radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (_cannonDistance + targetdistance * cos(degtoradian(targetangle)))))); 
+    angLaser2 = abs(180 - radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (targetdistance * cos(degtoradian(targetangle)) - _cannonDistance))));
   }
   
   servo1.write(angLaser1);
@@ -226,4 +230,13 @@ double Radar::radiantodeg(double radians){ //degre in radians
     double degrees = radians * 180.0 / M_PI;  
     return(degrees);
 
+}
+int Radar::calculateDist(){
+  int tempDistance = getDistance();
+  int tempDistance2 = getDistance(); 
+  while(tempDistance != tempDistance2 && !tempDistance){ //hold untill we get two successive measurres, different from 0
+   tempDistance = getDistance();
+   tempDistance2 = getDistance();
+  }
+  return (tempDistance);
 }

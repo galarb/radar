@@ -20,6 +20,7 @@ class Radar {
     void setNeoPixelsColor(int red, int green, int blue);
     void scan();
     void shoot(int targetangle, int targetdistance);
+    int calculateDist();
 
     private:
     int _echoPin;

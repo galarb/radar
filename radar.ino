@@ -1,11 +1,22 @@
-//Radar Software for esp32
-//Featuring Dual Core functionality
+/*  *******
+               Radar Software for esp32
+  Featuring Dual Core functionality
+  Supports: LCD 16x02
+            HC04 Ultrasonic Sensor
+
+
+  By: Gal Arbel
+  April   2023    
+          
+*/
+
+
 #include "radar.h"
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 
 //echoPin, trigPin, servoRadarPin, servoPin1, servoPin2, laserPin1, laserPin2, radarSpeed, cannonn distance in cm
-Radar myradar(5, 14, 33, 2, 4, 14, 12, 10, 20);
+Radar myradar(5, 14, 33, 2, 4, 32, 12, 20, 20);
 
 void setup() {
   myradar.begin(115200);
@@ -47,9 +58,8 @@ void loop_1 ( void * pvParameters ){
   Serial.print("loop_1 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){      //this is an infinite loop on Core 1
-    delay(1);
-    int targetdistance = myradar.getDistance();
-    if(targetdistance < 80){
+    int targetdistance = myradar.calculateDist();
+    if(targetdistance < 20){
      int targetangle = myradar.getAngle();
      myradar.shoot(targetangle, targetdistance);
      delay(1); 
@@ -57,5 +67,5 @@ void loop_1 ( void * pvParameters ){
  }
 }
 void loop() {
-//Must be left EMPTY
+//Must be left EMPTY2
 }
