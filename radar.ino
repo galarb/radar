@@ -12,15 +12,26 @@
 
 
 #include "radar.h"
+#include "Wifigal.h"
+
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 
-//echoPin, trigPin, servoRadarPin, servoPin1, servoPin2, laserPin1, laserPin2, radarSpeed, cannonn distance in cm
-Radar myradar(5, 14, 33, 2, 4, 32, 12, 20, 20);
+Radar myradar(
+  5,      //echoPin
+  14,     //trigPin
+  33,     //servoRadarPin
+  2,      //servoPin1
+  4,      //servoPin2
+  32,     //laserPin1
+  12,     //laserPin2
+  20,     //radarSpeed in mSec delay movement of the servo
+  20);    //cannonn distance from radar in cm
 
+Wifigal mywifi(true);
 void setup() {
   myradar.begin(115200);
-
+  mywifi.start();
   xTaskCreatePinnedToCore(
                     loop_0,   /* Task function. */
                     "Task1",     /* name of task. */
@@ -58,14 +69,16 @@ void loop_1 ( void * pvParameters ){
   Serial.print("loop_1 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){      //this is an infinite loop on Core 1
+    mywifi.run();
     int targetdistance = myradar.calculateDist();
     if(targetdistance < 20){
      int targetangle = myradar.getAngle();
      myradar.shoot(targetangle, targetdistance);
+     mywifi.sendwifi(targetangle, targetdistance); 
      delay(1); 
   }
  }
 }
 void loop() {
-//Must be left EMPTY2
+//Must be left EMPTY
 }
