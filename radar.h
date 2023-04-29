@@ -18,8 +18,10 @@ class Radar {
     double calculatePID(double input, int setPoint);
     void setStripLEDColor(int ledNum, int red, int green, int blue);
     void setNeoPixelsColor(int red, int green, int blue);
-    void scan();
-    void shoot(int targetangle, int targetdistance);
+    void scan(int radarscanner);
+    void shoot(int targetangle, int targetdistance, int shootlength);
+    void servotest(int ang);
+
     int calculateDist();
 
     private:

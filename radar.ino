@@ -12,26 +12,30 @@
 
 
 #include "radar.h"
+#include "clicli.h"
 #include "Wifigal.h"
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
-
 Radar myradar(
-  5,      //echoPin
-  14,     //trigPin
-  33,     //servoRadarPin
-  2,      //servoPin1
-  4,      //servoPin2
-  32,     //laserPin1
-  12,     //laserPin2
-  20,     //radarSpeed in mSec delay movement of the servo
-  20);    //cannonn distance from radar in cm
-
+  27,      //echoPin
+  17,     //trigPin
+  25,     //servoRadarPin//17, 25 is good  // 0, no good
+  2,      //servoPin1 (Right)
+  4,      //servoPin2 (Left)
+  32,     //laserPin1 (R)
+  12,     //laserPin2 (L)
+  30,     //radarSpeed in mSec delay movement of the servo
+  17);    //cannonn distance from radar in cm
+  
+clicli mycli(myradar);
 Wifigal mywifi(true);
+
 void setup() {
+  //this->myradar.begin(115200);
   myradar.begin(115200);
-  mywifi.start();
+  mycli.begin();
+  //mywifi.start();
   xTaskCreatePinnedToCore(
                     loop_0,   /* Task function. */
                     "Task1",     /* name of task. */
@@ -60,8 +64,9 @@ void loop_0 ( void * pvParameters ){
   Serial.println(xPortGetCoreID());
 
   for(;;){      //this is an infinite loop on Core 0
-   myradar.scan();
-   //delay(30);
+   //myradar.scan('1');
+   mycli.run();
+   delay(30);
 
   }
 }
@@ -69,12 +74,12 @@ void loop_1 ( void * pvParameters ){
   Serial.print("loop_1 running on core ");
   Serial.println(xPortGetCoreID());
   for(;;){      //this is an infinite loop on Core 1
-    mywifi.run();
+   // mywifi.run();
     int targetdistance = myradar.calculateDist();
     if(targetdistance < 20){
      int targetangle = myradar.getAngle();
-     myradar.shoot(targetangle, targetdistance);
-     mywifi.sendwifi(targetangle, targetdistance); 
+     //myradar.shoot(targetangle, targetdistance, 1);
+     //mywifi.sendwifi(targetangle, targetdistance); 
      delay(1); 
   }
  }

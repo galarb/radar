@@ -110,11 +110,13 @@ void Radar::begin(double bdrate) {
   previousTime = millis(); //otherwise the first Itegral value will be very high
   
   radarServo.setPeriodHertz(50);    // standard 50 hz servo
-	radarServo.attach(_servoRadarPin, 1000, 2000); 
+	radarServo.attach(_servoRadarPin); 
   servo1.setPeriodHertz(50);    
-  servo1.attach(_servoPin1, 1000, 2000); 
+  servo1.attach(_servoPin1); 
 	servo2.setPeriodHertz(50);
-  servo2.attach(_servoPin2, 1000, 2000); 
+  servo2.attach(_servoPin2); 
+  delay(30);
+
 }
 
 
@@ -186,21 +188,42 @@ void Radar::printInfo(int dist, int ang, int rightang, int leftang){
   Serial.println(leftang); 
 }
 
-void Radar::scan(){
-   
- for (int i = 0; i < 179; i++) {
-  radarServo.write(i);
-  delay(_radarSpeed);
-  _radarAngle = i;
- }  
- for (int i = 178; i > 1 ; i--) {
-  radarServo.write(i);
-  delay(_radarSpeed);
-  _radarAngle = i; 
- }  
+void Radar::scan(int radarscanner){
+  switch (radarscanner) {
+    case '1': //center servo
+    Serial.println("scanning center servo");
+     for (int i = 0; i < 179; i++) {
+      radarServo.write(i);
+      delay(_radarSpeed);
+      _radarAngle = i;
+     }
+     for (int i = 179; i > 1; i--) {
+      radarServo.write(i);
+      delay(_radarSpeed);
+      _radarAngle = i;
+     }
+    Serial.print("center servo position =");
+    Serial.println(_radarAngle);
+
+
+      break;
+    case '2'://right servo
+      for (int i = 0; i < 179; i++) {
+        servo1.write(i);
+        delay(_radarSpeed);
+      }
+      break;
+    case '3'://left servo
+      for (int i = 0; i < 179; i++) {
+        servo2.write(i);
+        delay(_radarSpeed);
+      }
+      break;  
+  }  
+ 
 }
 
-void Radar::shoot(int targetangle, int targetdistance){
+void Radar::shoot(int targetangle, int targetdistance, int shootlength){
   if(targetangle < 90 ){
     angLaser1 = radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (targetdistance * cos(degtoradian(targetangle)) - _cannonDistance)));
     angLaser2 =  radiantodeg(atan(targetdistance * sin(degtoradian(targetangle)) / (_cannonDistance + targetdistance * cos(degtoradian(targetangle))))); 
@@ -216,11 +239,17 @@ void Radar::shoot(int targetangle, int targetdistance){
   digitalWrite(_laserPin2, HIGH);
   printInfo(targetdistance, targetangle, angLaser1, angLaser2);
   ShowInfoLcd(targetangle, angLaser1, angLaser2);
-  delay(1000);// how long the beams will be shootign on the target
+  delay(shootlength*1000);// how long the beams will be shootign on the target
   digitalWrite(_laserPin1, LOW);
   digitalWrite(_laserPin2, LOW);
 }
 
+void Radar::servotest(int ang){
+  radarServo.write(ang);
+  servo1.write(ang);
+  servo2.write(ang);
+  
+}
 
 double Radar::degtoradian(double degrees){ //degre in angles
     double radians = degrees * M_PI / 180.0; // convert degrees to radians

@@ -5,8 +5,8 @@
 #include "AdafruitIO_WiFi.h"
 #include "Wifigal.h"
 
-#define ssid "xxx"   
-#define pass "xxx"
+#define ssid "arbs"   
+#define pass "lafamilia"
 
 #define AIO_USERNAME  "galarb"            //personal info from adafruit.io
 #define AIO_KEY       "aio_pAYD82KJpGasJG6voCrZ0M2fT3l0"
@@ -82,4 +82,6 @@ void Wifigal::sendwifi(int ang, int dis){
   radarDistance->save(dis);
   delay(2000);
 }
+
+
 
