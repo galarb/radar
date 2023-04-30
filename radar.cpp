@@ -51,11 +51,6 @@ Radar::Radar(int echoPin, int trigPin, int servoRadarPin, int servoPin1, int ser
   pinMode(_echoPin, INPUT); 
   pinMode(_laserPin1, OUTPUT);
   pinMode(_laserPin2, OUTPUT);
-
-  radarServo.attach(_servoRadarPin);
-  servo1.attach(_servoPin1);
-  servo2.attach(_servoPin2);
-   
 }
 
   
@@ -109,11 +104,11 @@ void Radar::begin(double bdrate) {
   setNeoPixelsColor (255, 0, 0); */
   previousTime = millis(); //otherwise the first Itegral value will be very high
   
-  radarServo.setPeriodHertz(50);    // standard 50 hz servo
+  radarServo.setPeriodHertz(70);    // standard 50 hz servo
 	radarServo.attach(_servoRadarPin); 
-  servo1.setPeriodHertz(50);    
+  servo1.setPeriodHertz(70);    
   servo1.attach(_servoPin1); 
-	servo2.setPeriodHertz(50);
+	servo2.setPeriodHertz(70);
   servo2.attach(_servoPin2); 
   delay(30);
 
@@ -202,10 +197,6 @@ void Radar::scan(int radarscanner){
       delay(_radarSpeed);
       _radarAngle = i;
      }
-    Serial.print("center servo position =");
-    Serial.println(_radarAngle);
-
-
       break;
     case '2'://right servo
       for (int i = 0; i < 179; i++) {
